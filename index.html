@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Media Video Downloader + Transcription</title>
+<style>
+/* ========== GLOBAL STYLES ========== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 30px;
+    border: 1px solid #e0e0e0;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 2em;
+    font-weight: 600;
+}
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 0.95em;
+}
+
+/* ========== INPUT SECTION ========== */
+.input-section {
+    margin-bottom: 30px;
+}
+
+.url-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+#videoUrl {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.2s;
+}
+
+#videoUrl:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+#startBtn {
+    padding: 12px 30px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#startBtn:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+#startBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #6c757d;
+}
+
+/* ========== STATUS BAR ========== */
+#statusBar {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 30px;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #e0e0e0;
+}
+
+#status {
+    font-weight: 500;
+    color: #333;
+    font-size: 1em;
+}
+
+.status-loading {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e0e0e0;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ========== MAIN CONTENT LAYOUT ========== */
+.main-content-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+.left-column {
+    flex: 0 0 400px;
+    min-width: 0;
+}
+
+.right-column {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ========== MEDIA SECTIONS ========== */
+.media-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #fafafa;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+}
+
+.media-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.video-title {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #555;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+video {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 0 0 10px 0;
+    display: block;
+    border: 1px solid #ddd;
+}
+
+audio {
+    width: 100%;
+    max-width: 600px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+}
+
+/* ========== TRANSCRIPTION SECTION ========== */
+#transcript {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    background: #fff;
+}
+
+/* ========== DOWNLOAD LINKS ========== */
+.download-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.download-link {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.download-link:hover {
+    background: #0056b3;
+}
+
+/* ========== ERROR MESSAGES ========== */
+.error {
+    background: #fee;
+    color: #c33;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid #fcc;
+    margin: 10px 0;
+}
+
+.success {
+    background: #efe;
+    color: #3c3;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid #cfc;
+    margin: 10px 0;
+}
+
+/* ========== HIDDEN CLASS ========== */
+.hidden {
+    display: none;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+    
+    h1 {
+        font-size: 1.8em;
+    }
+    
+    .url-input-group {
+        flex-direction: column;
+    }
+    
+    #startBtn {
+        width: 100%;
+    }
+    
+    .main-content-wrapper {
+        flex-direction: column;
+    }
+    
+    .left-column,
+    .right-column {
+        flex: 1;
+        width: 100%;
+    }
+    
+    video {
+        max-width: 100%;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>🎬 Social Media Video Processor</h1>
+    <p class="subtitle">Download and Transcribe Social Media Videos</p>
+
+    <!-- Input Section -->
+    <div class="input-section">
+        <div class="url-input-group">
+            <input 
+                type="text" 
+                id="videoUrl" 
+                placeholder="Enter video URL (Instagram, TikTok, YouTube, etc.)"
+                autocomplete="off"
+            >
+            <button id="startBtn" onclick="startProcess()">Start Process</button>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="statusBar">
+        <div id="status">Ready to process video...</div>
+    </div>
+
+    <!-- Main Content Layout: Video Left, Audio/Transcription Right -->
+    <div class="main-content-wrapper" id="mainContentWrapper" style="display: none;">
+        <!-- Left Side: Video -->
+        <div class="left-column">
+            <div class="media-section" id="videoSection">
+                <div class="section-title">📹 Original Video</div>
+                <video id="videoPlayer" controls></video>
+                <div class="download-links" id="videoLinks"></div>
+            </div>
+        </div>
+
+        <!-- Right Side: Caption, Audio & Transcription -->
+        <div class="right-column">
+            <div class="media-section" id="captionSection">
+                <div class="section-title">📝 Caption</div>
+                <div id="videoTitle" class="video-title">Video title will appear here...</div>
+            </div>
+
+            <div class="media-section" id="audioSection">
+                <div class="section-title">🎵 Extracted Audio</div>
+                <audio id="audioPlayer" controls></audio>
+                <div class="download-links" id="audioLinks"></div>
+            </div>
+
+            <div class="media-section" id="transcriptSection">
+                <div class="section-title">📝 Transcription</div>
+                <textarea id="transcript" placeholder="Transcription will appear here..." readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Puter.ai Speech-to-Text SDK -->
+<script src="https://js.puter.com/v2/"></script>
+
+<script>
+// ============================================================================
+// CONFIGURATION & API KEYS
+// ============================================================================
+// RapidAPI configuration for social media video downloader
+const RAPID_API_URL = 'https://social-download-all-in-one.p.rapidapi.com/v1/social/autolink';
+const RAPID_API_KEY = 'dc33d9e007msh84b8f56173f09ecp187f5cjsncb3b69b5c8bc';
+const RAPID_API_HOST = 'social-download-all-in-one.p.rapidapi.com';
+
+// RapidAPI Speech Recognition configuration (Real-time Speech Processing API)
+const SPEECH_RECOGNITION_API_URL = 'https://api-real-time-speech-processing.p.rapidapi.com/asr';
+const SPEECH_RECOGNITION_API_KEY = 'dc33d9e007msh84b8f56173f09ecp187f5cjsncb3b69b5c8bc';
+const SPEECH_RECOGNITION_API_HOST = 'api-real-time-speech-processing.p.rapidapi.com';
+
+// Use backend proxy if CORS issues occur
+// Set to true if you need to use the proxy server (see server.js)
+const USE_PROXY = false; // Set to true if you encounter CORS issues
+const PROXY_URL = 'http://localhost:3000';
+
+// Video downloads always use proxy to bypass CORS
+// This is separate from USE_PROXY because video downloads need proxy even when USE_PROXY is false
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Updates the status bar with a message and optional loading indicator
+ * @param {string} message - Status message to display
+ * @param {boolean} loading - Whether to show loading spinner
+ */
+function setStatus(message, loading = false) {
+    const statusEl = document.getElementById('status');
+    statusEl.innerHTML = loading 
+        ? `<span class="status-loading"></span>${message}` 
+        : message;
+}
+
+/**
+ * Shows an error message to the user
+ * @param {string} message - Error message to display
+ */
+function showError(message) {
+    setStatus(`❌ Error: ${message}`, false);
+    console.error(message);
+}
+
+/**
+ * Shows a success message to the user
+ * @param {string} message - Success message to display
+ */
+function showSuccess(message) {
+    setStatus(`✅ ${message}`, false);
+}
+
+/**
+ * Adds a download link to the specified container
+ * @param {string} url - URL to download
+ * @param {string} label - Label for the link
+ * @param {string} filename - Filename for download
+ * @param {string} containerId - ID of container to add link to
+ */
+function addDownloadLink(url, label, filename, containerId) {
+    const container = document.getElementById(containerId);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.className = 'download-link';
+    link.textContent = `⬇ ${label}`;
+    container.appendChild(link);
+}
+
+/**
+ * Shows a section by removing display:none style
+ * @param {string} sectionId - ID of section to show
+ */
+function showSection(sectionId) {
+    document.getElementById(sectionId).style.display = 'block';
+}
+
+// ============================================================================
+// MAIN PROCESS FLOW
+// ============================================================================
+
+/**
+ * Main function that orchestrates the entire video processing pipeline
+ * Steps:
+ * 1. Fetch download link from RapidAPI
+ * 2. Download video and display
+ * 3. Extract audio from video (WAV format)
+ * 4. Transcribe audio using Puter.ai Speech-to-Text API
+ */
+async function startProcess() {
+    // Get video URL from input
+    const videoUrl = document.getElementById('videoUrl').value.trim();
+    if (!videoUrl) {
+        alert('Please enter a video URL');
+        return;
+    }
+
+    // Disable button during processing
+    const startBtn = document.getElementById('startBtn');
+    startBtn.disabled = true;
+    startBtn.textContent = 'Processing...';
+
+    // Reset UI
+    document.getElementById('mainContentWrapper').style.display = 'none';
+    document.getElementById('videoLinks').innerHTML = '';
+    document.getElementById('audioLinks').innerHTML = '';
+    document.getElementById('transcript').value = '';
+    document.getElementById('videoTitle').textContent = 'Video title will appear here...';
+
+    try {
+        // Step 1: Fetch download link
+        setStatus('Fetching download link...', true);
+        const { downloadUrl, videoTitle } = await fetchDownloadLink(videoUrl);
+        if (!downloadUrl) {
+            throw new Error('Failed to get download link');
+        }
+        
+        // Display video title in caption section
+        if (videoTitle) {
+            document.getElementById('videoTitle').textContent = videoTitle;
+        }
+        
+        showSuccess('Download link fetched successfully');
+
+        // Step 2: Download video
+        setStatus('Downloading video...', true);
+        const videoBlob = await downloadVideo(downloadUrl);
+        const videoObjectUrl = URL.createObjectURL(videoBlob);
+        
+        // Display video
+        const videoPlayer = document.getElementById('videoPlayer');
+        videoPlayer.src = videoObjectUrl;
+        document.getElementById('mainContentWrapper').style.display = 'flex';
+        addDownloadLink(videoObjectUrl, 'Download MP4', 'video.mp4', 'videoLinks');
+        showSuccess('Video downloaded successfully');
+
+        // Step 3: Extract audio
+        setStatus('Extracting audio...', true);
+        const audioBlob = await convertVideoToWav(videoBlob);
+        const audioObjectUrl = URL.createObjectURL(audioBlob);
+        
+        // Display audio
+        const audioPlayer = document.getElementById('audioPlayer');
+        audioPlayer.src = audioObjectUrl;
+        // mainContentWrapper already displayed from video step
+        addDownloadLink(audioObjectUrl, 'Download Audio (WAV)', 'audio.wav', 'audioLinks');
+        showSuccess('Audio extracted successfully');
+
+        // Step 4: Transcribe audio
+        setStatus('Transcribing audio...', true);
+        await transcribeAudio(audioBlob);
+        // transcriptSection is already visible in right column
+        showSuccess('Transcription completed');
+
+        // Complete
+        setStatus('✅ Process completed successfully!', false);
+
+    } catch (error) {
+        showError(error.message || 'An error occurred during processing');
+    } finally {
+        // Re-enable button
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start Process';
+    }
+}
+
+// ============================================================================
+// STEP 1: FETCH DOWNLOAD LINK FROM RAPIDAPI
+// ============================================================================
+
+/**
+ * Fetches a direct download link for the social media video using RapidAPI
+ * Logs the full JSON response and tries multiple fields to find the video URL
+ * @param {string} pageUrl - Original social media video URL
+ * @returns {Promise<{downloadUrl: string, videoTitle: string}>} - Object with download URL and video title
+ */
+async function fetchDownloadLink(pageUrl) {
+    try {
+        const url = USE_PROXY ? `${PROXY_URL}/api/download` : RAPID_API_URL;
+        
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-rapidapi-key': RAPID_API_KEY,
+                'x-rapidapi-host': RAPID_API_HOST
+            },
+            body: JSON.stringify({ url: pageUrl })
+        };
+
+        // If using proxy, don't send RapidAPI headers to proxy
+        if (USE_PROXY) {
+            delete options.headers['x-rapidapi-key'];
+            delete options.headers['x-rapidapi-host'];
+        }
+
+        const response = await fetch(url, options);
+        
+        if (!response.ok) {
+            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const json = await response.json();
+        
+        // Log full response for debugging
+        console.log('Full RapidAPI Response:', JSON.stringify(json, null, 2));
+
+        // Extract video title
+        const videoTitle = json.title || json.result?.title || json.data?.title || 'No title available';
+
+        // Try various possible fields where the download URL might be
+        let downloadUrl = null;
+
+        // PRIORITY 1: Check medias array (most common format for this API)
+        // Check root-level medias array first
+        if (json.medias && Array.isArray(json.medias)) {
+            // For TikTok: prioritize quality - hd_no_watermark > no_watermark > others
+            // Filter all video medias
+            const videoMedias = json.medias.filter(m => 
+                m.url && m.type === 'video' && (m.extension === 'mp4' || m.url.includes('.mp4'))
+            );
+            
+            if (videoMedias.length > 0) {
+                // Prioritize by quality
+                const hdNoWatermark = videoMedias.find(m => 
+                    m.quality === 'hd_no_watermark' || m.quality === 'HD' || m.quality?.toLowerCase().includes('hd')
+                );
+                if (hdNoWatermark) {
+                    downloadUrl = hdNoWatermark.url;
+                    console.log('Found HD no watermark video');
+                } else {
+                    const noWatermark = videoMedias.find(m => 
+                        m.quality === 'no_watermark' || m.quality?.toLowerCase().includes('no_watermark')
+                    );
+                    if (noWatermark) {
+                        downloadUrl = noWatermark.url;
+                        console.log('Found no watermark video');
+                    } else {
+                        // Use first video media
+                        downloadUrl = videoMedias[0].url;
+                        console.log('Using first available video');
+                    }
+                }
+            } else {
+                // Fallback to any media with MP4 extension
+                const anyMp4 = json.medias.find(m => 
+                    m.url && (m.url.includes('.mp4') || m.extension === 'mp4')
+                );
+                if (anyMp4) {
+                    downloadUrl = anyMp4.url;
+                    console.log('Found MP4 media');
+                }
+            }
+        }
+        
+        // Check if result has a medias array
+        if (!downloadUrl && json.result?.medias && Array.isArray(json.result.medias)) {
+            // For TikTok: prioritize quality - hd_no_watermark > no_watermark > others
+            const videoMedias = json.result.medias.filter(m => 
+                m.url && m.type === 'video' && (m.extension === 'mp4' || m.url.includes('.mp4'))
+            );
+            
+            if (videoMedias.length > 0) {
+                // Prioritize by quality
+                const hdNoWatermark = videoMedias.find(m => 
+                    m.quality === 'hd_no_watermark' || m.quality === 'HD' || m.quality?.toLowerCase().includes('hd')
+                );
+                if (hdNoWatermark) {
+                    downloadUrl = hdNoWatermark.url;
+                } else {
+                    const noWatermark = videoMedias.find(m => 
+                        m.quality === 'no_watermark' || m.quality?.toLowerCase().includes('no_watermark')
+                    );
+                    if (noWatermark) {
+                        downloadUrl = noWatermark.url;
+                    } else {
+                        downloadUrl = videoMedias[0].url;
+                    }
+                }
+            } else {
+                // Fallback to any media with MP4
+                const anyMp4 = json.result.medias.find(m => 
+                    m.url && (m.url.includes('.mp4') || m.extension === 'mp4')
+                );
+                if (anyMp4) downloadUrl = anyMp4.url;
+            }
+        }
+        
+        // PRIORITY 2: Check direct video URL fields (but skip json.url as it's often the page URL)
+        if (!downloadUrl && json.result?.url && !json.result.url.includes('instagram.com/reel') && !json.result.url.includes('tiktok.com') && !json.result.url.includes('youtube.com')) {
+            downloadUrl = json.result.url;
+        }
+        if (!downloadUrl && json.result?.video_url) downloadUrl = json.result.video_url;
+        if (!downloadUrl && json.result?.download_url) downloadUrl = json.result.download_url;
+        if (!downloadUrl && json.result?.videoUrl) downloadUrl = json.result.videoUrl;
+        if (!downloadUrl && json.result?.downloadUrl) downloadUrl = json.result.downloadUrl;
+        
+        // PRIORITY 3: Check links array
+        if (!downloadUrl && json.result?.links && Array.isArray(json.result.links)) {
+            const link = json.result.links.find(l => 
+                l.url && (l.url.includes('.mp4') || l.quality || l.type === 'video')
+            );
+            if (link) downloadUrl = link.url;
+        }
+
+        // PRIORITY 4: Check data array
+        if (!downloadUrl && Array.isArray(json.data)) {
+            const video = json.data.find(d => d.url && d.url.includes('.mp4'));
+            if (video) downloadUrl = video.url;
+        }
+        
+        // PRIORITY 5: Check root-level json.url (but only if it looks like a direct video URL)
+        if (!downloadUrl && json.url) {
+            // Only use json.url if it looks like a direct video URL, not a page URL
+            if (json.url.includes('.mp4') || json.url.includes('video') || (!json.url.includes('instagram.com/reel') && !json.url.includes('tiktok.com') && !json.url.includes('youtube.com/watch'))) {
+                downloadUrl = json.url;
+            }
+        }
+
+        // If still not found, try any URL field in the entire response
+        if (!downloadUrl) {
+            const findUrl = (obj) => {
+                for (const key in obj) {
+                    if (key.toLowerCase().includes('url') && typeof obj[key] === 'string' && obj[key].includes('http')) {
+                        if (obj[key].includes('.mp4') || obj[key].includes('video')) {
+                            return obj[key];
+                        }
+                    }
+                    if (typeof obj[key] === 'object' && obj[key] !== null) {
+                        const found = findUrl(obj[key]);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+            downloadUrl = findUrl(json);
+        }
+
+        if (!downloadUrl) {
+            console.error('Could not find download URL in response structure:', json);
+            throw new Error('Download URL not found in API response. Check console for details.');
+        }
+
+        console.log('Found download URL:', downloadUrl);
+        console.log('Video title:', videoTitle);
+        
+        return { downloadUrl, videoTitle: videoTitle || 'No title available' };
+
+    } catch (error) {
+        console.error('Error fetching download link:', error);
+        throw new Error(`Failed to fetch download link: ${error.message}`);
+    }
+}
+
+// ============================================================================
+// STEP 2: DOWNLOAD VIDEO
+// ============================================================================
+
+/**
+ * Downloads the video from the direct download URL
+ * Uses proxy to bypass CORS restrictions for TikTok and other platforms
+ * @param {string} downloadUrl - Direct video download URL
+ * @returns {Promise<Blob>} - Video blob
+ */
+async function downloadVideo(downloadUrl) {
+    try {
+        // Use proxy to bypass CORS issues (especially for TikTok)
+        const proxyUrl = `${PROXY_URL}/api/video-download?url=${encodeURIComponent(downloadUrl)}`;
+        
+        console.log('Downloading video via proxy...');
+        const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': '*/*'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Video download failed:', errorText);
+            throw new Error(`Video download failed: ${response.status} - ${errorText}`);
+        }
+        
+        const blob = await response.blob();
+        
+        // Verify it's a video
+        if (!blob.type.includes('video') && !blob.type.includes('octet-stream') && blob.size > 0) {
+            console.warn('Downloaded blob type:', blob.type, 'size:', blob.size);
+        }
+        
+        console.log('Video downloaded successfully, size:', blob.size, 'bytes');
+        return blob;
+    } catch (error) {
+        console.error('Error downloading video:', error);
+        throw new Error(`Video download failed: ${error.message}`);
+    }
+}
+
+// ============================================================================
+// STEP 3: CONVERT VIDEO TO WAV AUDIO
+// ============================================================================
+
+/**
+ * Converts a video blob to WAV audio format using Web Audio API
+ * Uses OfflineAudioContext for non-realtime processing
+ * @param {Blob} videoBlob - Video blob to convert
+ * @returns {Promise<Blob>} - WAV audio blob
+ */
+async function convertVideoToWav(videoBlob) {
+    // First, try to decode the blob directly as audio (works for some formats)
+    try {
+        const arrayBuffer = await videoBlob.arrayBuffer();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const decoded = await audioContext.decodeAudioData(arrayBuffer);
+        
+        // Use OfflineAudioContext to render the audio
+        const offline = new OfflineAudioContext(
+            decoded.numberOfChannels,
+            decoded.length,
+            decoded.sampleRate
+        );
+        const src = offline.createBufferSource();
+        src.buffer = decoded;
+        src.connect(offline.destination);
+        src.start();
+        const rendered = await offline.startRendering();
+        
+        const wavBuffer = audioBufferToWav(rendered);
+        return new Blob([wavBuffer], { type: 'audio/wav' });
+        
+    } catch (directError) {
+        console.log('Direct audio decode failed, trying video element approach...', directError);
+        
+        // Fallback: Use video element + MediaRecorder API
+        try {
+            const video = document.createElement('video');
+            const videoUrl = URL.createObjectURL(videoBlob);
+            video.src = videoUrl;
+            video.muted = true;
+            video.crossOrigin = 'anonymous';
+            
+            // Wait for video to be ready
+            await new Promise((resolve, reject) => {
+                video.onloadedmetadata = () => {
+                    if (video.duration && video.duration > 0) {
+                        resolve();
+                    } else {
+                        reject(new Error('Video duration is invalid'));
+                    }
+                };
+                video.onerror = reject;
+                video.load();
+            });
+            
+            // Create AudioContext and connect video element
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaElementSource(video);
+            
+            // Create ScriptProcessorNode to capture audio data
+            const bufferSize = 4096;
+            const processor = audioContext.createScriptProcessor(bufferSize, 2, 2);
+            const channels = [];
+            const sampleRate = audioContext.sampleRate;
+            
+            processor.onaudioprocess = (e) => {
+                for (let i = 0; i < e.inputBuffer.numberOfChannels; i++) {
+                    if (!channels[i]) channels[i] = [];
+                    const inputData = e.inputBuffer.getChannelData(i);
+                    channels[i].push(new Float32Array(inputData));
+                }
+            };
+            
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+            
+            // Play video and capture audio
+            await video.play();
+            
+            // Wait for video to finish
+            await new Promise((resolve) => {
+                video.onended = resolve;
+                // Timeout as backup
+                setTimeout(resolve, (video.duration + 2) * 1000);
+            });
+            
+            // Stop processing
+            processor.disconnect();
+            source.disconnect();
+            
+            // Combine all audio chunks
+            if (channels.length === 0 || channels[0].length === 0) {
+                throw new Error('No audio data captured');
+            }
+            
+            const totalLength = channels[0].reduce((sum, chunk) => sum + chunk.length, 0);
+            const audioBuffer = audioContext.createBuffer(
+                channels.length,
+                totalLength,
+                sampleRate
+            );
+            
+            for (let ch = 0; ch < channels.length; ch++) {
+                const channelData = audioBuffer.getChannelData(ch);
+                let offset = 0;
+                for (const chunk of channels[ch]) {
+                    channelData.set(chunk, offset);
+                    offset += chunk.length;
+                }
+            }
+            
+            // Convert to WAV
+            const wavBuffer = audioBufferToWav(audioBuffer);
+            const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+            
+            // Cleanup
+            URL.revokeObjectURL(videoUrl);
+            video.src = '';
+            
+            return wavBlob;
+            
+        } catch (videoError) {
+            console.error('Video element approach failed:', videoError);
+            throw new Error(`Audio extraction failed: ${directError.message}. Fallback also failed: ${videoError.message}`);
+        }
+    }
+}
+
+/**
+ * Converts an AudioBuffer to WAV format
+ * Implements the WAV file format specification
+ * @param {AudioBuffer} buffer - Audio buffer to convert
+ * @returns {ArrayBuffer} - WAV file as ArrayBuffer
+ */
+function audioBufferToWav(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const length = buffer.length;
+    const bytesPerSample = 2; // 16-bit
+    const blockAlign = numChannels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = length * blockAlign;
+    const bufferSize = 44 + dataSize;
+    
+    const arrayBuffer = new ArrayBuffer(bufferSize);
+    const view = new DataView(arrayBuffer);
+    let offset = 0;
+    
+    // Helper to write string
+    const writeString = (str) => {
+        for (let i = 0; i < str.length; i++) {
+            view.setUint8(offset++, str.charCodeAt(i));
+        }
+    };
+    
+    // RIFF header
+    writeString('RIFF');
+    view.setUint32(offset, bufferSize - 8, true); offset += 4;
+    writeString('WAVE');
+    
+    // Format chunk
+    writeString('fmt ');
+    view.setUint32(offset, 16, true); offset += 4; // Chunk size
+    view.setUint16(offset, 1, true); offset += 2; // Audio format (PCM)
+    view.setUint16(offset, numChannels, true); offset += 2;
+    view.setUint32(offset, sampleRate, true); offset += 4;
+    view.setUint32(offset, byteRate, true); offset += 4;
+    view.setUint16(offset, blockAlign, true); offset += 2;
+    view.setUint16(offset, 16, true); offset += 2; // Bits per sample
+    
+    // Data chunk
+    writeString('data');
+    view.setUint32(offset, dataSize, true); offset += 4;
+    
+    // Write audio data (interleaved)
+    const channels = [];
+    for (let i = 0; i < numChannels; i++) {
+        channels.push(buffer.getChannelData(i));
+    }
+    
+    for (let i = 0; i < length; i++) {
+        for (let ch = 0; ch < numChannels; ch++) {
+            const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+            const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+            view.setInt16(offset, int16, true);
+            offset += 2;
+        }
+    }
+    
+    return arrayBuffer;
+}
+
+// ============================================================================
+// STEP 4: TRANSCRIBE AUDIO
+// ============================================================================
+
+/**
+ * Transcribes audio using Puter.ai Speech-to-Text API
+ * Shows real-time progress updates in the UI
+ * @param {Blob} audioBlob - Audio blob (WAV format) to transcribe
+ * @returns {Promise<void>}
+ */
+/**
+ * Optimizes audio for faster transcription by compressing and reducing quality
+ * @param {Blob} audioBlob - Original audio blob
+ * @param {HTMLElement} transcriptEl - Transcript textarea element for updates
+ * @returns {Promise<Blob>} - Optimized audio blob
+ */
+async function optimizeAudioForTranscription(audioBlob, transcriptEl) {
+    try {
+        if (transcriptEl) transcriptEl.value += '\n⚡ Audio optimize ho rahi hai (faster transcription)...';
+        
+        // Decode audio
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const decoded = await audioContext.decodeAudioData(arrayBuffer);
+        
+        // Optimize: Reduce sample rate to 16kHz (good for speech) and convert to mono
+        const targetSampleRate = 16000; // 16kHz is optimal for speech recognition
+        const offlineContext = new OfflineAudioContext(1, decoded.length * targetSampleRate / decoded.sampleRate, targetSampleRate);
+        const source = offlineContext.createBufferSource();
+        
+        // Create mono buffer from original
+        const monoBuffer = audioContext.createBuffer(1, decoded.length, decoded.sampleRate);
+        const monoData = monoBuffer.getChannelData(0);
+        for (let i = 0; i < decoded.length; i++) {
+            // Average all channels to mono
+            let sum = 0;
+            for (let ch = 0; ch < decoded.numberOfChannels; ch++) {
+                sum += decoded.getChannelData(ch)[i];
+            }
+            monoData[i] = sum / decoded.numberOfChannels;
+        }
+        
+        source.buffer = monoBuffer;
+        source.connect(offlineContext.destination);
+        source.start();
+        
+        const rendered = await offlineContext.startRendering();
+        
+        // Convert to WAV
+        const wavBuffer = audioBufferToWav(rendered);
+        const optimizedBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+        
+        const sizeReduction = ((1 - optimizedBlob.size/audioBlob.size) * 100).toFixed(1);
+        console.log(`Audio optimized: ${audioBlob.size} -> ${optimizedBlob.size} bytes (${sizeReduction}% smaller)`);
+        if (transcriptEl) {
+            transcriptEl.value += `\n✅ Optimized: ${(audioBlob.size/1024/1024).toFixed(2)} MB -> ${(optimizedBlob.size/1024/1024).toFixed(2)} MB (${sizeReduction}% faster!)\n`;
+        }
+        
+        return optimizedBlob;
+    } catch (error) {
+        console.warn('Audio optimization failed, using original:', error);
+        if (transcriptEl) transcriptEl.value += '\n⚠️ Optimization failed, using original audio\n';
+        return audioBlob; // Fallback to original
+    }
+}
+
+/**
+ * Transcribes audio using Puter.ai Speech-to-Text API
+ * Shows real-time progress updates in the UI
+ * @param {Blob} audioBlob - Audio blob (WAV format) to transcribe
+ * @returns {Promise<void>}
+ */
+async function transcribeAudio(audioBlob) {
+    const transcriptEl = document.getElementById('transcript');
+    let progressInterval = null; // Declare outside try block
+    
+    try {
+        console.log('Starting transcription with Puter.ai...');
+        console.log('Original audio file size:', audioBlob.size, 'bytes');
+        
+        // Initialize transcript area with progress message
+        transcriptEl.value = '🔄 Transcription shuru ho rahi hai...\n\n⚡ Fast transcription mode enabled!\n⏳ Audio optimize ho rahi hai...';
+        
+        // Check if Puter.ai is loaded
+        if (typeof puter === 'undefined' || !puter.ai || !puter.ai.speech2txt) {
+            throw new Error('Puter.ai SDK is not loaded. Please check your internet connection.');
+        }
+
+        // Optimize audio for faster processing (compress, reduce quality)
+        const optimizedAudio = await optimizeAudioForTranscription(audioBlob, transcriptEl);
+        
+        // Calculate audio duration estimate
+        const audioSizeMB = optimizedAudio.size / (1024 * 1024);
+        const estimatedSeconds = Math.round(audioSizeMB * 8); // Faster estimate with optimization
+        
+        // Show progress updates
+        let progressCounter = 0;
+        const progressMessages = [
+            '🔄 Audio file analyze ho rahi hai...',
+            '🎤 Speech recognition chal rahi hai...',
+            '📝 Text generate ho raha hai...',
+            '✨ Processing complete hone wali hai...'
+        ];
+        
+        progressInterval = setInterval(() => {
+            progressCounter++;
+            const messageIndex = progressCounter % progressMessages.length;
+            const elapsed = Math.floor(progressCounter * 2);
+            
+            transcriptEl.value = 
+                `⚡ Fast Transcription Mode\n\n` +
+                `${progressMessages[messageIndex]}\n\n` +
+                `⏱️ Elapsed time: ${elapsed} seconds\n` +
+                `📊 File size: ${audioSizeMB.toFixed(2)} MB (optimized)\n` +
+                `⏳ Estimated time: ~${estimatedSeconds} seconds\n\n` +
+                `Please wait, transcription ho rahi hai...`;
+        }, 2000); // Update every 2 seconds
+        
+        // Update status bar
+        setStatus(`Transcribing audio (optimized)... (${audioSizeMB.toFixed(2)} MB)`, true);
+
+        // Add timeout for transcription (3 minutes max for optimized)
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+                if (progressInterval) clearInterval(progressInterval);
+                reject(new Error('Transcription timeout: The audio file is too long. Try a shorter video.'));
+            }, 3 * 60 * 1000); // 3 minutes timeout
+        });
+
+        // Use Puter.ai speech2txt API with optimized audio
+        transcriptEl.value += '\n\n🚀 API call start ho rahi hai (optimized audio)...';
+        const transcriptionPromise = puter.ai.speech2txt(optimizedAudio);
+        
+        console.log('Waiting for transcription response...');
+        transcriptEl.value += '\n⏳ Server se response ka intezar...';
+        
+        const result = await Promise.race([transcriptionPromise, timeoutPromise]);
+        
+        // Clear progress interval once we get result
+        if (progressInterval) clearInterval(progressInterval);
+        progressInterval = null;
+        
+        console.log('Transcription response received:', result);
+        transcriptEl.value = '✅ Response mil gaya! Processing...\n\n';
+        
+        // Extract transcript text from result
+        let transcriptText = '';
+        
+        if (typeof result === 'string') {
+            transcriptText = result;
+        } else if (result && typeof result === 'object') {
+            transcriptText = result.text || result.transcript || result.transcription || JSON.stringify(result);
+        }
+        
+        if (transcriptText && transcriptText.trim()) {
+            // Show the transcript with a nice message
+            transcriptEl.value = 
+                `✅ Transcription Complete! (Fast Mode)\n\n` +
+                `📝 Transcript:\n\n` +
+                `${transcriptText.trim()}\n\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `📊 Stats: ${transcriptText.length} characters, ${transcriptText.split(/\s+/).length} words`;
+            
+            console.log('Transcription successful. Length:', transcriptText.length, 'characters');
+        } else {
+            console.warn('Empty or invalid transcription result:', result);
+            transcriptEl.value = 
+                '⚠️ Transcription completed but no text was found.\n\n' +
+                'This might mean:\n' +
+                '- The video has no speech/audio\n' +
+                '- The audio is not in a supported language\n' +
+                '- The audio quality is too poor\n\n' +
+                'Raw response: ' + JSON.stringify(result).substring(0, 200);
+        }
+        
+    } catch (error) {
+        // Fix: Check if progressInterval exists before clearing
+        if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+        }
+        
+        console.error('Transcription error:', error);
+        
+        let errorMessage = `❌ Transcription Error\n\n${error.message}`;
+        
+        if (error.message.includes('timeout')) {
+            errorMessage += '\n\n💡 Tip: Try with a shorter video (under 1 minute) for faster transcription.';
+        } else if (error.message.includes('too large') || error.message.includes('size')) {
+            errorMessage += '\n\n💡 Tip: The audio file might be too large. Try with a shorter video.';
+        }
+        
+        errorMessage += '\n\n🔍 Check console for more details.';
+        transcriptEl.value = errorMessage;
+    }
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+// Allow Enter key to trigger start
+document.getElementById('videoUrl').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        startProcess();
+    }
+});
+
+console.log('🎬 Social Media Video Processor initialized');
+console.log('📝 Instructions:');
+console.log('1. Enter a social media video URL (Instagram, TikTok, YouTube, etc.)');
+console.log('2. Click "Start Process" to begin');
+console.log('3. The app will download, extract audio, and transcribe');
+console.log('');
+console.log('⚠️  Note: Web Speech API transcription may not work perfectly with audio files.');
+console.log('   For production use, consider integrating a file-based transcription API.');
+
+</script>
+</body>
+</html>
