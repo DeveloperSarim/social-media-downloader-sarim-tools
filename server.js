@@ -123,32 +123,68 @@ app.get('/api/video-download', async (req, res) => {
 
         console.log(`[Proxy] Downloading video from: ${videoUrl.substring(0, 100)}...`);
 
+        // Determine referer based on video source
+        let referer = 'https://www.youtube.com/';
+        if (videoUrl.includes('tiktok') || videoUrl.includes('musical.ly')) {
+            referer = 'https://www.tiktok.com/';
+        } else if (videoUrl.includes('instagram')) {
+            referer = 'https://www.instagram.com/';
+        } else if (videoUrl.includes('youtube') || videoUrl.includes('googlevideo.com')) {
+            referer = 'https://www.youtube.com/';
+        }
+
+        // Prepare headers for video download
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': referer,
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'identity', // Don't compress, we need the raw video
+            'Connection': 'keep-alive',
+            'Sec-Fetch-Dest': 'video',
+            'Sec-Fetch-Mode': 'no-cors',
+            'Sec-Fetch-Site': 'cross-site'
+        };
+
+        // For YouTube videos, add Range header support
+        if (videoUrl.includes('googlevideo.com') || videoUrl.includes('youtube')) {
+            headers['Range'] = req.headers.range || 'bytes=0-';
+        }
+
         // Fetch the video from the source
         const response = await fetch(videoUrl, {
             method: 'GET',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Referer': 'https://www.tiktok.com/',
-                'Accept': '*/*'
-            }
+            headers: headers,
+            redirect: 'follow'
         });
 
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`[Proxy] Video download error: ${response.status} - ${errorText.substring(0, 200)}`);
             return res.status(response.status).json({ 
-                error: `Video download failed: ${response.status}` 
+                error: `Video download failed: ${response.status}`,
+                details: errorText.substring(0, 500)
             });
         }
 
-        // Get content type
+        // Get content type and other headers
         const contentType = response.headers.get('content-type') || 'video/mp4';
+        const contentLength = response.headers.get('content-length');
+        const contentRange = response.headers.get('content-range');
         
-        // Set appropriate headers
+        // Set appropriate response headers
         res.setHeader('Content-Type', contentType);
-        res.setHeader('Content-Disposition', `attachment; filename="video.mp4"`);
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET');
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type');
+        
+        if (contentLength) {
+            res.setHeader('Content-Length', contentLength);
+        }
+        if (contentRange) {
+            res.setHeader('Content-Range', contentRange);
+            res.status(206); // Partial content
+        }
 
         // Stream the video to the client
         const videoBuffer = await response.arrayBuffer();
