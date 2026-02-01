@@ -37,7 +37,7 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' })); // Parse URL-en
 app.use(express.static(__dirname)); // Serve static files (index.html)
 
 // API Keys (from index.html - in production, use environment variables)
-const RAPID_API_KEY = process.env.RAPID_API_KEY || 'dc33d9e007msh84b8f56173f09ecp187f5cjsncb3b69b5c8bc';
+const RAPID_API_KEY = process.env.RAPID_API_KEY || 'e0e359e518msh92ca86be7eeba3fp1025d7jsn1a0c267e66fa';
 const RAPID_API_HOST = 'social-download-all-in-one.p.rapidapi.com';
 const RAPID_API_URL = 'https://social-download-all-in-one.p.rapidapi.com/v1/social/autolink';
 
