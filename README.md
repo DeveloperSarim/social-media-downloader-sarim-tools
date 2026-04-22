@@ -27,7 +27,7 @@ A powerful web application to download videos from social media platforms (TikTo
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/social-media-downloader-sarim-tools.git
+   git clone https://github.com/DeveloperSarim/social-media-downloader-sarim-tools.git
    cd social-media-downloader-sarim-tools
    ```
 
@@ -55,7 +55,7 @@ This project is configured for easy deployment on Vercel:
    git init
    git add .
    git commit -m "Initial commit"
-   git remote add origin https://github.com/yourusername/social-media-downloader-sarim-tools.git
+   git remote add origin https://github.com/DeveloperSarim/social-media-downloader-sarim-tools.git
    git push -u origin main
    ```
 
